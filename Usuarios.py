@@ -133,95 +133,102 @@ class MongoViewerApp:
             padding=(10, 5)
         )
         
-        # Estilos específicos para cada tipo de botón
+        # Estilo para botones principales
         self.style.configure("Connect.TButton",
-            background='#17a2b8',
-            foreground='#003366',
-            font=('Helvetica', 10, 'bold'),
-            padding=(20, 5),  # Más padding horizontal, menos vertical
-            borderwidth=2,
-            relief="raised"
-        )
-        self.style.map("Connect.TButton",
-            background=[('active', '#138496')],
-            foreground=[('active', '#003366')]
+            font=('Helvetica', 10),
+            background='#007bff',
+            foreground='#ffffff'
         )
         
         self.style.configure("Refresh.TButton",
-            background='#28a745',
-            foreground='#004d00',
-            font=('Helvetica', 10, 'bold'),
-            padding=(20, 5),  
-            borderwidth=2,
-            relief="raised"
+            font=('Helvetica', 10),
+            background='#17a2b8',  # Color cyan
+            foreground='#ffffff'
         )
-        self.style.map("Refresh.TButton",
-            background=[('active', '#218838')],
-            foreground=[('active', '#004d00')]
+
+        self.style.configure("Help.TButton",
+            font=('Helvetica', 10),
+            background='#28a745',  # Color verde
+            foreground='#ffffff'
         )
         
         self.style.configure("Add.TButton",
+            font=('Helvetica', 10),
             background='#28a745',
-            foreground='#004d00',
-            font=('Helvetica', 10, 'bold'),
-            padding=(20, 5),  
-            borderwidth=2,
-            relief="raised"
-        )
-        self.style.map("Add.TButton",
-            background=[('active', '#218838')],
-            foreground=[('active', '#004d00')]
+            foreground='#ffffff'
         )
         
         self.style.configure("Update.TButton",
+            font=('Helvetica', 10),
             background='#ffc107',
-            foreground='#1A1A1A',
-            font=('Helvetica', 10, 'bold'),
-            padding=(20, 5),  # Más padding horizontal, menos vertical
-            borderwidth=2,
-            relief="raised"
-        )
-        self.style.map("Update.TButton",
-            background=[('active', '#e0a800')],
-            foreground=[('active', '#1A1A1A')]
+            foreground='#000000'
         )
         
         self.style.configure("Delete.TButton",
+            font=('Helvetica', 10),
             background='#dc3545',
-            foreground='#8b0000',
-            font=('Helvetica', 10, 'bold'),
-            padding=(20, 5),  
-            borderwidth=2,
-            relief="raised"
-        )
-        self.style.map("Delete.TButton",
-            background=[('active', '#bd2130')],
-            foreground=[('active', '#8b0000')]
+            foreground='#ffffff'
         )
         
         self.style.configure("Clear.TButton",
+            font=('Helvetica', 10),
             background='#6c757d',
-            foreground='#333333',
-            font=('Helvetica', 10, 'bold'),
-            padding=(20, 5), 
-            borderwidth=2,
-            relief="raised"
+            foreground='#ffffff'
         )
+        
+        # Mapeo de estados para botones
+        self.style.map("Connect.TButton",
+            background=[('active', '#0056b3')],
+            foreground=[('active', '#ffffff')]
+        )
+        
+        self.style.map("Refresh.TButton",
+            background=[('active', '#138496')],
+            foreground=[('active', '#ffffff')]
+        )
+
+        self.style.map("Help.TButton",
+            background=[('active', '#218838')],
+            foreground=[('active', '#ffffff')]
+        )
+        
+        self.style.map("Add.TButton",
+            background=[('active', '#218838')],
+            foreground=[('active', '#ffffff')]
+        )
+        
+        self.style.map("Update.TButton",
+            background=[('active', '#e0a800')],
+            foreground=[('active', '#000000')]
+        )
+        
+        self.style.map("Delete.TButton",
+            background=[('active', '#c82333')],
+            foreground=[('active', '#ffffff')]
+        )
+        
         self.style.map("Clear.TButton",
             background=[('active', '#5a6268')],
-            foreground=[('active', '#333333')]
+            foreground=[('active', '#ffffff')]
         )
         
         # Estilo para etiquetas
         self.style.configure("TLabel",
+            font=('Helvetica', 10),
+            background='#F5F5F5',
+            foreground='#000000'
+        )
+        
+        self.style.configure("Status.TLabel",
             font=('Helvetica', 10, 'bold'),
             background='#F5F5F5',
-            foreground='#000000',
-            padding=(5, 5)
+            foreground='#28a745',
+            padding=8
         )
         
         # Estilo para entradas
         self.style.configure("TEntry",
+            font=('Helvetica', 10),
             fieldbackground='white',
             foreground='#000000',
             padding=8,
@@ -259,10 +266,11 @@ class MongoViewerApp:
         
         # Configurar el control_frame
         self.control_frame.grid(row=0, column=0, sticky="ew", pady=(0, 5))
-        self.control_frame.grid_columnconfigure(0, weight=1)
-        self.control_frame.grid_columnconfigure(1, weight=1)
-        self.control_frame.grid_columnconfigure(2, weight=2)
-        self.control_frame.grid_columnconfigure(3, weight=1)
+        self.control_frame.grid_columnconfigure(0, weight=0)  # Sin expansión para los botones
+        self.control_frame.grid_columnconfigure(1, weight=1)  # Expansión para el estado
+        
+        # Cargar el logo
+        self.load_logo()
 
         # Configurar el notebook
         self.notebook.grid(row=1, column=0, sticky="nsew", pady=5)
@@ -316,55 +324,73 @@ class MongoViewerApp:
             style="Title.TLabelframe"
         )
         
-        # Botones principales
+        # Frame para los botones
+        button_frame = ttk.Frame(self.control_frame)
+        button_frame.grid(row=0, column=0, padx=20, pady=5)  # Aumenté el padding horizontal
+        
+        # Primera fila de botones
         self.connect_button = ttk.Button(
-            self.control_frame, 
+            button_frame, 
             text="Conectar a MongoDB",
             command=self.connect_mongo,
-            style="Connect.TButton"
+            style="Connect.TButton",
+            width=18  # Aumenté el ancho
         )
-        self.connect_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
-
+        self.connect_button.grid(row=0, column=0, padx=3, pady=2)
+        
         self.refresh_button = ttk.Button(
-            self.control_frame,
-            text="Refrescar Datos",
+            button_frame,
+            text="Refrescar",
             command=self.load_data,
             state=tk.DISABLED,
-            style="Refresh.TButton"
+            style="Refresh.TButton",  # Cambié el estilo
+            width=18
         )
-        self.refresh_button.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
-
+        self.refresh_button.grid(row=0, column=1, padx=3, pady=2)
+        
+        # Segunda fila de botones
+        self.help_button = ttk.Button(
+            button_frame,
+            text="Ayuda",
+            command=self.show_help,
+            style="Help.TButton",  # Nuevo estilo
+            width=18
+        )
+        self.help_button.grid(row=1, column=0, padx=3, pady=2)
+        
+        self.exit_button = ttk.Button(
+            button_frame,
+            text="Salir",
+            command=self.on_closing,
+            style="Delete.TButton",
+            width=18
+        )
+        self.exit_button.grid(row=1, column=1, padx=3, pady=2)
+        
+        # Etiqueta de estado
         self.status_label = ttk.Label(
             self.control_frame,
             text="Estado: Desconectado",
-            foreground='#ffc107',
+            foreground='#dc3545',
             style="TLabel"
         )
-        self.status_label.grid(row=0, column=2, padx=10, sticky="e")
-
-        # Cargar el logo
-        self.load_logo()
-
-        # --- Notebook para pestañas ---
+        self.status_label.grid(row=0, column=1, padx=5, pady=5)
+        
+        # Notebook para pestañas
         self.notebook = ttk.Notebook(self.main_frame)
-        self.notebook.grid(row=1, column=0, sticky="nsew", pady=5)
-
-        # Crear frames para cada sección
+        
+        # Frames para cada pestaña
         self.estudiantes_frame = ttk.Frame(self.notebook)
         self.materias_frame = ttk.Frame(self.notebook)
         self.profesores_frame = ttk.Frame(self.notebook)
         self.consultas_frame = ttk.Frame(self.notebook)
-
-        # Configurar expansión de frames
-        for frame in [self.estudiantes_frame, self.materias_frame, self.profesores_frame, self.consultas_frame]:
-            frame.grid_columnconfigure(0, weight=1)
-            frame.grid_rowconfigure(1, weight=1)
-
+        
         # Agregar pestañas al notebook
         self.notebook.add(self.estudiantes_frame, text="Estudiantes")
         self.notebook.add(self.materias_frame, text="Materias")
         self.notebook.add(self.profesores_frame, text="Profesores")
         self.notebook.add(self.consultas_frame, text="Consultas")
+        
 
         # Configurar eventos de cambio de pestaña
         self.notebook.bind('<<NotebookTabChanged>>', self.on_tab_change)
@@ -630,17 +656,17 @@ class MongoViewerApp:
 
     def create_profesores_widgets(self):
         # Frame para gestión de profesores
-        self.profesores_frame = ttk.LabelFrame(
+        self.prof_frame = ttk.LabelFrame(
             self.profesores_frame,
             text="Gestión de Profesores",
             padding="10",
             style="Title.TLabelframe"
         )
-        self.profesores_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
-        self.profesores_frame.grid_columnconfigure(1, weight=1)
+        self.prof_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+        self.prof_frame.grid_columnconfigure(1, weight=1)
         
         # Frame para campos de entrada
-        input_frame = ttk.Frame(self.profesores_frame)
+        input_frame = ttk.Frame(self.prof_frame)
         input_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
         input_frame.grid_columnconfigure(1, weight=1)
         
@@ -661,7 +687,7 @@ class MongoViewerApp:
         self.email_entry.grid(row=2, column=1, sticky="ew", pady=2)
 
         # Frame para botones
-        button_frame = ttk.Frame(self.profesores_frame)
+        button_frame = ttk.Frame(self.prof_frame)
         button_frame.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
         button_frame.grid_columnconfigure(0, weight=1)
         button_frame.grid_columnconfigure(1, weight=1)
@@ -1275,27 +1301,30 @@ class MongoViewerApp:
 
     def show_help(self):
         help_text = """
-        Sistema de Gestión de Estudiantes - FIEE
+Sistema de Gestión de Estudiantes - FIEE
 
-        1. Conectar a MongoDB:
-           - Haz clic en "Conectar a MongoDB" o usa el menú Archivo > Conectar
+Instrucciones de Uso:
 
-        2. Gestión de Estudiantes:
-           - Agregar: Completa los campos y haz clic en "Agregar"
-           - Actualizar: Selecciona un estudiante, modifica los campos y haz clic en "Actualizar"
-           - Eliminar: Selecciona un estudiante y haz clic en "Eliminar"
-           - Limpiar: Limpia todos los campos
+1. Conexión
+   • Conectar: Inicia la conexión con MongoDB
+   • Refrescar: Actualiza los datos mostrados
 
-        3. Formato de Matrícula:
-           - Debe comenzar con 'zS' seguido de 8 dígitos
-           - Ejemplo: zS21002379
+2. Gestión de Estudiantes
+   • Agregar: Ingresa datos y presiona "Agregar"
+   • Actualizar: Selecciona, modifica y presiona "Actualizar"
+   • Eliminar: Selecciona y presiona "Eliminar"
+   • Limpiar: Borra todos los campos
 
-        4. Estado de Conexión:
-        - Rojo: Desconectado
-        - Verde: Conectado
-        - Azul: Cargando datos
+3. Formato de Matrícula
+   • Estructura: zS + 8 dígitos
+   • Ejemplo: zS21002379
+
+4. Estados
+   • 🔴 Rojo: Sin conexión
+   • 🟢 Verde: Conectado
+   • 🔵 Azul: Cargando
         """
-        messagebox.showinfo("Ayuda", help_text)
+        messagebox.showinfo("Ayuda del Sistema", help_text)
 
     def show_about(self):
         about_text = """
