@@ -32,35 +32,6 @@ DEPARTAMENTOS = [
     "Departamento de Mecatrónica"
 ]
 
-# Colores 
-COLORS = {
-    'primary': '#003366',      # Azul marino institucional
-    'secondary': '#990000',    # Rojo institucional
-    'accent': '#FFD700',       # Dorado para acentos
-    'bg': '#F5F5F5',          # Fondo claro
-    'text': '#000000',         # Texto negro
-    'success': '#28a745',      # Verde para éxito
-    'warning': '#ffc107',      # Amarillo para advertencias
-    'error': '#dc3545',        # Rojo para errores
-    'info': '#17a2b8',         # Azul para información
-    'button_text': '#000000',  # Texto negro para botones
-    'button_bg': '#E0E0E0',    # Fondo gris claro para botones
-    'button_active': '#CCCCCC', # Color gris más oscuro para botones activos
-    'section_title': '#003366', # Color para títulos de sección
-    'connect_button': '#17a2b8', # Azul para botón de conexión
-    'refresh_button': '#28a745', # Verde para botón de refrescar
-    'add_button': '#28a745',    # Verde para botón de agregar
-    'update_button': '#ffc107', # Amarillo para botón de actualizar
-    'delete_button': '#dc3545', # Rojo para botón de eliminar
-    'clear_button': '#6c757d',  # Gris para botón de limpiar
-    'button_text_light': '#E8E8E8', # Texto claro para botones oscuros
-    'button_text_dark': '#1A1A1A',   # Texto oscuro para botones claros
-    'button_text_blue': '#003366',   # Texto azul oscuro
-    'button_text_green': '#004d00',  # Texto verde oscuro
-    'button_text_red': '#8b0000',    # Texto rojo oscuro
-    'button_text_gray': '#333333'    # Texto gris oscuro
-}
-
 # Columnas esperadas por tabla
 EXPECTED_COLUMNS = {
     'estudiantes': ['nombre', 'matricula', 'carrera'],
@@ -79,7 +50,7 @@ class MongoViewerApp:
         self.configure_styles()
         
         # Configurar color de fondo
-        self.root.configure(bg=COLORS['bg'])
+        self.root.configure(bg='#F5F5F5')
 
         self.client = None
         self.db = None
@@ -106,7 +77,7 @@ class MongoViewerApp:
                 self.logo_label = ttk.Label(
                     self.control_frame,
                     image=self.logo_photo,
-                    background=COLORS['bg']
+                    background='#F5F5F5'
                 )
                 self.logo_label.grid(row=0, column=3, padx=5, pady=5)
             else:
@@ -118,29 +89,29 @@ class MongoViewerApp:
         # Estilo general
         self.style.configure(".",
             font=('Helvetica', 10),
-            background=COLORS['bg'],
-            foreground=COLORS['text']
+            background='#F5F5F5',
+            foreground='#000000'
         )
         
         # Estilo para frames con título
         self.style.configure("Title.TLabelframe",
-            background=COLORS['bg'],
-            foreground=COLORS['section_title'],
+            background='#F5F5F5',
+            foreground='#003366',
             font=('Helvetica', 12, 'bold'),
             borderwidth=2,
             relief="solid"
         )
         self.style.configure("Title.TLabelframe.Label",
             font=('Helvetica', 12, 'bold'),
-            foreground=COLORS['section_title'],
-            background=COLORS['bg'],
+            foreground='#003366',
+            background='#F5F5F5',
             padding=(10, 5)
         )
         
         # Estilos específicos para cada tipo de botón
         self.style.configure("Connect.TButton",
-            background=COLORS['connect_button'],
-            foreground=COLORS['button_text_blue'],
+            background='#17a2b8',
+            foreground='#003366',
             font=('Helvetica', 10, 'bold'),
             padding=(20, 5),  # Más padding horizontal, menos vertical
             borderwidth=2,
@@ -148,12 +119,12 @@ class MongoViewerApp:
         )
         self.style.map("Connect.TButton",
             background=[('active', '#138496')],
-            foreground=[('active', COLORS['button_text_blue'])]
+            foreground=[('active', '#003366')]
         )
         
         self.style.configure("Refresh.TButton",
-            background=COLORS['refresh_button'],
-            foreground=COLORS['button_text_green'],
+            background='#28a745',
+            foreground='#004d00',
             font=('Helvetica', 10, 'bold'),
             padding=(20, 5),  # Más padding horizontal, menos vertical
             borderwidth=2,
@@ -161,12 +132,12 @@ class MongoViewerApp:
         )
         self.style.map("Refresh.TButton",
             background=[('active', '#218838')],
-            foreground=[('active', COLORS['button_text_green'])]
+            foreground=[('active', '#004d00')]
         )
         
         self.style.configure("Add.TButton",
-            background=COLORS['add_button'],
-            foreground=COLORS['button_text_green'],
+            background='#28a745',
+            foreground='#004d00',
             font=('Helvetica', 10, 'bold'),
             padding=(20, 5),  # Más padding horizontal, menos vertical
             borderwidth=2,
@@ -174,12 +145,12 @@ class MongoViewerApp:
         )
         self.style.map("Add.TButton",
             background=[('active', '#218838')],
-            foreground=[('active', COLORS['button_text_green'])]
+            foreground=[('active', '#004d00')]
         )
         
         self.style.configure("Update.TButton",
-            background=COLORS['update_button'],
-            foreground=COLORS['button_text_dark'],
+            background='#ffc107',
+            foreground='#1A1A1A',
             font=('Helvetica', 10, 'bold'),
             padding=(20, 5),  # Más padding horizontal, menos vertical
             borderwidth=2,
@@ -187,12 +158,12 @@ class MongoViewerApp:
         )
         self.style.map("Update.TButton",
             background=[('active', '#e0a800')],
-            foreground=[('active', COLORS['button_text_dark'])]
+            foreground=[('active', '#1A1A1A')]
         )
         
         self.style.configure("Delete.TButton",
-            background=COLORS['delete_button'],
-            foreground=COLORS['button_text_red'],
+            background='#dc3545',
+            foreground='#8b0000',
             font=('Helvetica', 10, 'bold'),
             padding=(20, 5),  # Más padding horizontal, menos vertical
             borderwidth=2,
@@ -200,12 +171,12 @@ class MongoViewerApp:
         )
         self.style.map("Delete.TButton",
             background=[('active', '#bd2130')],
-            foreground=[('active', COLORS['button_text_red'])]
+            foreground=[('active', '#8b0000')]
         )
         
         self.style.configure("Clear.TButton",
-            background=COLORS['clear_button'],
-            foreground=COLORS['button_text_gray'],
+            background='#6c757d',
+            foreground='#333333',
             font=('Helvetica', 10, 'bold'),
             padding=(20, 5),  # Más padding horizontal, menos vertical
             borderwidth=2,
@@ -213,21 +184,21 @@ class MongoViewerApp:
         )
         self.style.map("Clear.TButton",
             background=[('active', '#5a6268')],
-            foreground=[('active', COLORS['button_text_gray'])]
+            foreground=[('active', '#333333')]
         )
         
         # Estilo para etiquetas
         self.style.configure("TLabel",
             font=('Helvetica', 10, 'bold'),
-            background=COLORS['bg'],
-            foreground=COLORS['text'],
+            background='#F5F5F5',
+            foreground='#000000',
             padding=(5, 5)
         )
         
         # Estilo para entradas
         self.style.configure("TEntry",
             fieldbackground='white',
-            foreground=COLORS['text'],
+            foreground='#000000',
             padding=8,
             borderwidth=2,
             relief="solid"
@@ -239,16 +210,16 @@ class MongoViewerApp:
             rowheight=25,
             background='white',
             fieldbackground='white',
-            foreground=COLORS['text']
+            foreground='#000000'
         )
         self.style.configure("Treeview.Heading",
             font=('Helvetica', 10, 'bold'),
-            background=COLORS['button_bg'],
-            foreground=COLORS['button_text']
+            background='#E0E0E0',
+            foreground='#000000'
         )
         self.style.map("Treeview",
-            background=[('selected', COLORS['button_bg'])],
-            foreground=[('selected', COLORS['button_text'])]
+            background=[('selected', '#E0E0E0')],
+            foreground=[('selected', '#000000')]
         )
 
     def configure_layout(self):
@@ -277,17 +248,17 @@ class MongoViewerApp:
             frame.grid_rowconfigure(1, weight=1)  # Más peso para la tabla
 
     def create_menu(self):
-        menubar = tk.Menu(self.root, bg=COLORS['button_bg'], fg=COLORS['button_text'])
+        menubar = tk.Menu(self.root, bg='#E0E0E0', fg='#000000')
         self.root.config(menu=menubar)
 
         # Menú Archivo
         file_menu = tk.Menu(
             menubar,
             tearoff=0,
-            bg=COLORS['bg'],
-            fg=COLORS['text'],
-            activebackground=COLORS['button_bg'],
-            activeforeground=COLORS['button_text']
+            bg='#F5F5F5',
+            fg='#000000',
+            activebackground='#E0E0E0',
+            activeforeground='#000000'
         )
         file_menu.add_command(label="Conectar", command=self.connect_mongo)
         file_menu.add_command(label="Refrescar", command=self.load_data)
@@ -299,10 +270,10 @@ class MongoViewerApp:
         help_menu = tk.Menu(
             menubar,
             tearoff=0,
-            bg=COLORS['bg'],
-            fg=COLORS['text'],
-            activebackground=COLORS['button_bg'],
-            activeforeground=COLORS['button_text']
+            bg='#F5F5F5',
+            fg='#000000',
+            activebackground='#E0E0E0',
+            activeforeground='#000000'
         )
         help_menu.add_command(label="Ayuda", command=self.show_help)
         help_menu.add_command(label="Acerca de", command=self.show_about)
@@ -341,7 +312,7 @@ class MongoViewerApp:
         self.status_label = ttk.Label(
             self.control_frame,
             text="Estado: Desconectado",
-            foreground=COLORS['error'],
+            foreground='#ffc107',
             style="TLabel"
         )
         self.status_label.grid(row=0, column=2, padx=10, sticky="e")
@@ -797,7 +768,7 @@ class MongoViewerApp:
             self.carrera_entry.set(selected)
 
     def connect_mongo(self):
-        self.status_label.config(text="Estado: Conectando...", foreground=COLORS['warning'])
+        self.status_label.config(text="Estado: Conectando...", foreground='#ffc107')
         self.root.update_idletasks()
 
         try:
@@ -819,12 +790,12 @@ class MongoViewerApp:
             
             self.status_label.config(
                 text=f"Estado: Conectado a {DATABASE_NAME}",
-                foreground=COLORS['success']
+                foreground='#28a745'
             )
             messagebox.showinfo("Conexión Exitosa", "Conectado a MongoDB correctamente.")
 
         except Exception as e:
-            self.status_label.config(text="Estado: Error de Conexión", foreground=COLORS['error'])
+            self.status_label.config(text="Estado: Error de Conexión", foreground='#dc3545')
             messagebox.showerror("Error de Conexión", f"No se pudo conectar a MongoDB.\nError: {e}")
             self.client = None
             self.db = None
@@ -836,7 +807,7 @@ class MongoViewerApp:
             return
 
         try:
-            self.status_label.config(text="Estado: Cargando datos...", foreground=COLORS['info'])
+            self.status_label.config(text="Estado: Cargando datos...", foreground='#17a2b8')
             self.root.update_idletasks()
 
             # Obtener el árbol correspondiente a la sección actual
@@ -854,7 +825,7 @@ class MongoViewerApp:
                 messagebox.showinfo("Información", f"No hay {self.current_section} registrados.")
                 self.status_label.config(
                     text=f"Estado: Conectado a {DATABASE_NAME}/{COLLECTIONS[self.current_section]} (Vacía)",
-                    foreground=COLORS['success']
+                    foreground='#28a745'
                 )
                 return
 
@@ -865,12 +836,12 @@ class MongoViewerApp:
 
             self.status_label.config(
                 text=f"Estado: Conectado ({len(documents)} {self.current_section})",
-                foreground=COLORS['success']
+                foreground='#28a745'
             )
 
         except Exception as e:
             messagebox.showerror("Error", f"Error al cargar datos: {e}")
-            self.status_label.config(text="Estado: Error al cargar", foreground=COLORS['error'])
+            self.status_label.config(text="Estado: Error al cargar", foreground='#dc3545')
 
     def add_alumno(self):
         if not self.validate_fields():
