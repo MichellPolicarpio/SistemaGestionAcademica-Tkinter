@@ -17,6 +17,31 @@ COLLECTIONS = {
     'profesores': "Profesores"
 }
 
+# Consultas precargadas
+CONSULTAS = {
+    "Estudiantes por carrera": {
+        "coleccion": "Alumnos",
+        "consulta": {"carrera": "Ingeniería Mecatrónica"},
+        "descripcion": "Muestra todos los estudiantes de Ingeniería Mecatrónica"
+    },
+    "Materias con más de 4 créditos": {
+        "coleccion": "Materias",
+        "consulta": {"creditos": {"$gt": 4}},
+        "descripcion": "Muestra todas las materias que tienen más de 4 créditos"
+    },
+    "Estudiantes ordenados por nombre": {
+        "coleccion": "Alumnos",
+        "consulta": {},
+        "orden": [("nombre", 1)],
+        "descripcion": "Muestra todos los estudiantes ordenados por nombre"
+    },
+    "Materias por carrera": {
+        "coleccion": "Materias",
+        "consulta": {"carreras": "Ingeniería Informática"},
+        "descripcion": "Muestra todas las materias de Ingeniería Informática"
+    }
+}
+
 # Lista predefinida de carreras
 CARRERAS = [
     "Ingeniería Mecatrónica",
@@ -126,7 +151,7 @@ class MongoViewerApp:
             background='#28a745',
             foreground='#004d00',
             font=('Helvetica', 10, 'bold'),
-            padding=(20, 5),  # Más padding horizontal, menos vertical
+            padding=(20, 5),  
             borderwidth=2,
             relief="raised"
         )
@@ -139,7 +164,7 @@ class MongoViewerApp:
             background='#28a745',
             foreground='#004d00',
             font=('Helvetica', 10, 'bold'),
-            padding=(20, 5),  # Más padding horizontal, menos vertical
+            padding=(20, 5),  
             borderwidth=2,
             relief="raised"
         )
@@ -165,7 +190,7 @@ class MongoViewerApp:
             background='#dc3545',
             foreground='#8b0000',
             font=('Helvetica', 10, 'bold'),
-            padding=(20, 5),  # Más padding horizontal, menos vertical
+            padding=(20, 5),  
             borderwidth=2,
             relief="raised"
         )
@@ -178,7 +203,7 @@ class MongoViewerApp:
             background='#6c757d',
             foreground='#333333',
             font=('Helvetica', 10, 'bold'),
-            padding=(20, 5),  # Más padding horizontal, menos vertical
+            padding=(20, 5), 
             borderwidth=2,
             relief="raised"
         )
@@ -243,7 +268,7 @@ class MongoViewerApp:
         self.notebook.grid(row=1, column=0, sticky="nsew", pady=5)
         
         # Configurar los frames de las pestañas
-        for frame in [self.estudiantes_frame, self.materias_frame, self.profesores_frame]:
+        for frame in [self.estudiantes_frame, self.materias_frame, self.profesores_frame, self.consultas_frame]:
             frame.grid_columnconfigure(0, weight=1)
             frame.grid_rowconfigure(1, weight=1)  # Más peso para la tabla
 
@@ -328,9 +353,10 @@ class MongoViewerApp:
         self.estudiantes_frame = ttk.Frame(self.notebook)
         self.materias_frame = ttk.Frame(self.notebook)
         self.profesores_frame = ttk.Frame(self.notebook)
+        self.consultas_frame = ttk.Frame(self.notebook)
 
         # Configurar expansión de frames
-        for frame in [self.estudiantes_frame, self.materias_frame, self.profesores_frame]:
+        for frame in [self.estudiantes_frame, self.materias_frame, self.profesores_frame, self.consultas_frame]:
             frame.grid_columnconfigure(0, weight=1)
             frame.grid_rowconfigure(1, weight=1)
 
@@ -338,6 +364,7 @@ class MongoViewerApp:
         self.notebook.add(self.estudiantes_frame, text="Estudiantes")
         self.notebook.add(self.materias_frame, text="Materias")
         self.notebook.add(self.profesores_frame, text="Profesores")
+        self.notebook.add(self.consultas_frame, text="Consultas")
 
         # Configurar eventos de cambio de pestaña
         self.notebook.bind('<<NotebookTabChanged>>', self.on_tab_change)
@@ -346,15 +373,16 @@ class MongoViewerApp:
         self.create_estudiantes_widgets()
         self.create_materias_widgets()
         self.create_profesores_widgets()
+        self.create_consultas_widgets()
 
     def on_tab_change(self, event):
         # Obtener el índice de la pestaña seleccionada
         current_tab = self.notebook.index(self.notebook.select())
-        sections = ['estudiantes', 'materias', 'profesores']
+        sections = ['estudiantes', 'materias', 'profesores', 'consultas']
         self.current_section = sections[current_tab]
         
-        # Actualizar la colección actual
-        if self.db is not None:
+        # Actualizar la colección actual solo si no estamos en la pestaña de consultas
+        if self.db is not None and self.current_section != 'consultas':
             self.collection = self.db[COLLECTIONS[self.current_section]]
             self.load_data()
 
@@ -682,6 +710,231 @@ class MongoViewerApp:
 
         # Tabla de profesores
         self.create_treeview(self.profesores_frame, 'profesores')
+
+    def create_consultas_widgets(self):
+        # Frame para gestión de consultas
+        self.consultas_control_frame = ttk.LabelFrame(
+            self.consultas_frame,
+            text="Consultas MongoDB",
+            padding="10",
+            style="Title.TLabelframe"
+        )
+        self.consultas_control_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+        self.consultas_control_frame.grid_columnconfigure(1, weight=1)
+        
+        # Frame para controles de consulta
+        query_frame = ttk.Frame(self.consultas_control_frame)
+        query_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
+        query_frame.grid_columnconfigure(1, weight=1)
+        
+        # Combobox para seleccionar consulta
+        self.consulta_label = ttk.Label(query_frame, text="Seleccionar Consulta:", style="TLabel")
+        self.consulta_label.grid(row=0, column=0, sticky="w", padx=(0, 5), pady=2)
+        
+        self.consulta_var = tk.StringVar()
+        self.consulta_combo = ttk.Combobox(
+            query_frame,
+            textvariable=self.consulta_var,
+            values=list(CONSULTAS.keys()),
+            width=40,
+            state="readonly"
+        )
+        self.consulta_combo.grid(row=0, column=1, sticky="ew", pady=2)
+        self.consulta_combo.bind('<<ComboboxSelected>>', self.on_consulta_select)
+        
+        # Descripción de la consulta
+        self.descripcion_label = ttk.Label(query_frame, text="Descripción:", style="TLabel")
+        self.descripcion_label.grid(row=1, column=0, sticky="w", padx=(0, 5), pady=2)
+        
+        self.descripcion_text = ttk.Label(
+            query_frame,
+            text="Seleccione una consulta para ver su descripción",
+            style="TLabel",
+            wraplength=400
+        )
+        self.descripcion_text.grid(row=1, column=1, sticky="w", pady=2)
+        
+        # Visualización de la consulta en formato Compass
+        self.consulta_compass_label = ttk.Label(query_frame, text="Consulta (formato Compass):", style="TLabel")
+        self.consulta_compass_label.grid(row=2, column=0, sticky="w", padx=(0, 5), pady=2)
+        
+        self.consulta_compass_text = tk.Text(
+            query_frame,
+            height=3,
+            width=50,
+            wrap=tk.WORD,
+            font=('Courier', 10)
+        )
+        self.consulta_compass_text.grid(row=2, column=1, sticky="ew", pady=2)
+        
+        # Botón para ejecutar consulta
+        self.ejecutar_button = ttk.Button(
+            query_frame,
+            text="Ejecutar Consulta",
+            command=self.ejecutar_consulta,
+            state=tk.DISABLED,
+            style="Connect.TButton"
+        )
+        self.ejecutar_button.grid(row=3, column=0, columnspan=2, pady=10, sticky="ew")
+        
+        # Frame para resultados
+        results_frame = ttk.LabelFrame(
+            self.consultas_frame,
+            text="Resultados",
+            padding="10",
+            style="Title.TLabelframe"
+        )
+        results_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
+        results_frame.grid_columnconfigure(0, weight=1)
+        results_frame.grid_rowconfigure(0, weight=1)
+        
+        # Treeview para resultados
+        self.consultas_tree = ttk.Treeview(
+            results_frame,
+            columns=[],
+            show='headings',
+            height=15,
+            style="Treeview"
+        )
+        
+        # Scrollbars para resultados
+        vsb = ttk.Scrollbar(
+            results_frame,
+            orient="vertical",
+            command=self.consultas_tree.yview
+        )
+        hsb = ttk.Scrollbar(
+            results_frame,
+            orient="horizontal",
+            command=self.consultas_tree.xview
+        )
+        self.consultas_tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        
+        # Posicionar Treeview y Scrollbars
+        self.consultas_tree.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+        vsb.grid(row=0, column=1, sticky="ns", pady=5)
+        hsb.grid(row=1, column=0, sticky="ew", padx=5)
+
+    def on_consulta_select(self, event=None):
+        """Manejar la selección de una consulta"""
+        consulta_nombre = self.consulta_var.get()
+        if consulta_nombre in CONSULTAS:
+            consulta_info = CONSULTAS[consulta_nombre]
+            self.descripcion_text.config(text=consulta_info["descripcion"])
+            
+            # Mostrar la consulta en formato Compass
+            self.consulta_compass_text.delete(1.0, tk.END)
+            
+            # Formatear la consulta para Compass
+            coleccion = consulta_info["coleccion"]
+            consulta = consulta_info["consulta"]
+            orden = consulta_info.get("orden", [])
+            
+            # Convertir la consulta a formato JSON para Compass
+            import json
+            consulta_json = json.dumps(consulta, indent=2, ensure_ascii=False)
+            
+            # Construir el texto de la consulta
+            consulta_texto = f"db.{coleccion}.find({consulta_json})"
+            
+            # Agregar orden si existe
+            if orden:
+                orden_json = json.dumps(orden, indent=2, ensure_ascii=False)
+                consulta_texto += f".sort({orden_json})"
+                
+            self.consulta_compass_text.insert(tk.END, consulta_texto)
+            self.ejecutar_button.config(state=tk.NORMAL)
+
+    def ejecutar_consulta(self):
+        """Ejecutar la consulta seleccionada"""
+        if self.db is None:
+            messagebox.showwarning("No Conectado", "Por favor, conecta a MongoDB primero.")
+            return
+            
+        try:
+            # Obtener la consulta del campo de texto
+            consulta_texto = self.consulta_compass_text.get(1.0, tk.END).strip()
+            
+            # Parsear la consulta
+            import re
+            # Patrón más flexible para detectar la consulta
+            match = re.match(r"db\.(\w+)\.find\((.*?)\)(?:\s*\.sort\((.*?)\))?$", consulta_texto, re.DOTALL)
+            if not match:
+                messagebox.showerror("Error", "Formato de consulta inválido. Debe ser: db.coleccion.find({consulta}).sort([orden])")
+                return
+                
+            coleccion_nombre, consulta_json, orden_json = match.groups()
+            
+            # Convertir JSON a diccionario
+            import json
+            try:
+                # Manejar consulta vacía
+                consulta = json.loads(consulta_json) if consulta_json and consulta_json.strip() else {}
+                
+                # Manejar orden vacío o None
+                orden = None
+                if orden_json and orden_json.strip():
+                    try:
+                        orden = json.loads(orden_json)
+                    except json.JSONDecodeError:
+                        # Si no es un JSON válido, intentar convertirlo a una lista de tuplas
+                        orden_texto = orden_json.strip('[]').strip()
+                        if orden_texto:
+                            # Convertir "(campo, 1)" a [("campo", 1)]
+                            orden = []
+                            for orden_item in orden_texto.split(','):
+                                orden_item = orden_item.strip()
+                                if orden_item:
+                                    # Extraer campo y dirección
+                                    campo_match = re.match(r'\(?\s*"?(\w+)"?\s*,\s*([-+]?\d+)\s*\)?', orden_item)
+                                    if campo_match:
+                                        campo, direccion = campo_match.groups()
+                                        orden.append((campo, int(direccion)))
+            except json.JSONDecodeError as e:
+                messagebox.showerror("Error", f"Formato JSON inválido en la consulta: {e}")
+                return
+                
+            # Obtener la colección
+            coleccion = self.db[coleccion_nombre]
+            
+            # Limpiar tabla de resultados
+            for item in self.consultas_tree.get_children():
+                self.consultas_tree.delete(item)
+                
+            # Configurar columnas dinámicamente
+            self.consultas_tree["columns"] = []
+            for col in self.consultas_tree["columns"]:
+                self.consultas_tree.heading(col, text="")
+                self.consultas_tree.column(col, width=0)
+                
+            # Ejecutar consulta
+            if orden:
+                resultados = list(coleccion.find(consulta).sort(orden))
+            else:
+                resultados = list(coleccion.find(consulta))
+                
+            if not resultados:
+                messagebox.showinfo("Resultados", "La consulta no devolvió resultados.")
+                return
+                
+            # Configurar columnas basadas en el primer resultado
+            columnas = list(resultados[0].keys())
+            columnas.remove("_id")  # Excluir el ID de MongoDB
+            
+            self.consultas_tree["columns"] = columnas
+            for col in columnas:
+                self.consultas_tree.heading(col, text=col.capitalize())
+                self.consultas_tree.column(col, width=150, minwidth=100)
+                
+            # Insertar resultados
+            for doc in resultados:
+                valores = [str(doc.get(col, "")) for col in columnas]
+                self.consultas_tree.insert("", tk.END, values=valores)
+                
+            messagebox.showinfo("Éxito", f"Consulta ejecutada. Se encontraron {len(resultados)} resultados.")
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al ejecutar la consulta: {e}")
 
     def create_treeview(self, parent, section):
         # Frame para la tabla
