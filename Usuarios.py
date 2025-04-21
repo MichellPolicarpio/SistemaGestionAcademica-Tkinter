@@ -720,12 +720,12 @@ class MongoViewerApp:
             style="Title.TLabelframe"
         )
         self.consultas_control_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
-        self.consultas_control_frame.grid_columnconfigure(1, weight=1)
+        self.consultas_control_frame.grid_columnconfigure(0, weight=1)  # Hacer que el frame sea responsivo
         
         # Frame para controles de consulta
         query_frame = ttk.Frame(self.consultas_control_frame)
-        query_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
-        query_frame.grid_columnconfigure(1, weight=1)
+        query_frame.grid(row=0, column=0, sticky="nsew")
+        query_frame.grid_columnconfigure(1, weight=1)  # Hacer que el contenido se expanda
         
         # Combobox para seleccionar consulta
         self.consulta_label = ttk.Label(query_frame, text="Seleccionar Consulta:", style="TLabel")
@@ -736,7 +736,6 @@ class MongoViewerApp:
             query_frame,
             textvariable=self.consulta_var,
             values=list(CONSULTAS.keys()),
-            width=40,
             state="readonly"
         )
         self.consulta_combo.grid(row=0, column=1, sticky="ew", pady=2)
@@ -750,9 +749,10 @@ class MongoViewerApp:
             query_frame,
             text="Seleccione una consulta para ver su descripción",
             style="TLabel",
-            wraplength=400
+            wraplength=400,
+            justify="left"  # Justificar el texto a la izquierda
         )
-        self.descripcion_text.grid(row=1, column=1, sticky="w", pady=2)
+        self.descripcion_text.grid(row=1, column=1, sticky="ew", pady=2)
         
         # Visualización de la consulta en formato Compass
         self.consulta_compass_label = ttk.Label(query_frame, text="Consulta (formato Compass):", style="TLabel")
@@ -761,21 +761,26 @@ class MongoViewerApp:
         self.consulta_compass_text = tk.Text(
             query_frame,
             height=3,
-            width=50,
             wrap=tk.WORD,
             font=('Courier', 10)
         )
         self.consulta_compass_text.grid(row=2, column=1, sticky="ew", pady=2)
         
-        # Botón para ejecutar consulta
+        # Frame para el botón (centrado y más compacto)
+        button_frame = ttk.Frame(query_frame)
+        button_frame.grid(row=3, column=0, columnspan=2, pady=5)
+        button_frame.grid_columnconfigure(0, weight=1)
+        
+        # Botón para ejecutar consulta (más compacto)
         self.ejecutar_button = ttk.Button(
-            query_frame,
-            text="Ejecutar Consulta",
+            button_frame,
+            text="Ejecutar",  # Texto más corto
             command=self.ejecutar_consulta,
             state=tk.DISABLED,
-            style="Connect.TButton"
+            style="Connect.TButton",
+            width=15  # Ancho fijo más pequeño
         )
-        self.ejecutar_button.grid(row=3, column=0, columnspan=2, pady=10, sticky="ew")
+        self.ejecutar_button.grid(row=0, column=0, pady=5)
         
         # Frame para resultados
         results_frame = ttk.LabelFrame(
