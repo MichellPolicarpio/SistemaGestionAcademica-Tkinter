@@ -510,10 +510,13 @@ class MongoViewerApp:
         self.creditos_entry.grid(row=0, column=3)
 
         # Segunda fila: Nombre
-        self.nombre_materia_label = ttk.Label(input_frame, text="Nombre:", style="TLabel")
-        self.nombre_materia_label.grid(row=1, column=0, sticky="w", pady=2)
-        self.nombre_materia_entry = ttk.Entry(input_frame, width=40, style="TEntry")
-        self.nombre_materia_entry.grid(row=1, column=0, sticky="ew", pady=2)
+        nombre_frame = ttk.Frame(input_frame)
+        nombre_frame.grid(row=1, column=0, sticky="ew", pady=2)
+        
+        self.nombre_materia_label = ttk.Label(nombre_frame, text="Nombre:", style="TLabel", width=8)
+        self.nombre_materia_label.grid(row=0, column=0, padx=(0, 5))
+        self.nombre_materia_entry = ttk.Entry(nombre_frame, width=37, style="TEntry")
+        self.nombre_materia_entry.grid(row=0, column=1, sticky="ew")
 
         # Frame para lista de carreras (más compacto)
         carreras_frame = ttk.LabelFrame(input_frame, text="Carreras", padding="2")
@@ -532,24 +535,24 @@ class MongoViewerApp:
             )
             cb.grid(row=i//2, column=i%2, sticky="w", padx=5, pady=1)
 
-        # Frame para botones (más compacto)
+        # Frame para botones
         button_frame = ttk.Frame(self.materias_control_frame)
-        button_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
+        button_frame.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
         button_frame.grid_columnconfigure(0, weight=1)
         button_frame.grid_columnconfigure(1, weight=1)
         button_frame.grid_rowconfigure(0, weight=1)
         button_frame.grid_rowconfigure(1, weight=1)
         
-        # Botones CRUD para materias en disposición 2x2
+        # Botones CRUD para materias
         self.add_materia_button = ttk.Button(
             button_frame,
             text="Agregar",
             command=self.add_materia,
             state=tk.DISABLED,
             style="Add.TButton",
-            width=10
+            width=12
         )
-        self.add_materia_button.grid(row=0, column=0, padx=2, pady=2, sticky="ew")
+        self.add_materia_button.grid(row=0, column=0, padx=5, pady=2, sticky="ew")
 
         self.update_materia_button = ttk.Button(
             button_frame,
@@ -557,9 +560,9 @@ class MongoViewerApp:
             command=self.update_materia,
             state=tk.DISABLED,
             style="Update.TButton",
-            width=10
+            width=12
         )
-        self.update_materia_button.grid(row=0, column=1, padx=2, pady=2, sticky="ew")
+        self.update_materia_button.grid(row=0, column=1, padx=5, pady=2, sticky="ew")
 
         self.delete_materia_button = ttk.Button(
             button_frame,
@@ -567,27 +570,27 @@ class MongoViewerApp:
             command=self.delete_materia,
             state=tk.DISABLED,
             style="Delete.TButton",
-            width=10
+            width=12
         )
-        self.delete_materia_button.grid(row=1, column=0, padx=2, pady=2, sticky="ew")
+        self.delete_materia_button.grid(row=1, column=0, padx=5, pady=2, sticky="ew")
 
         self.clear_materia_button = ttk.Button(
             button_frame,
             text="Limpiar",
             command=self.clear_materia_fields,
             style="Clear.TButton",
-            width=10
+            width=12
         )
-        self.clear_materia_button.grid(row=1, column=1, padx=2, pady=2, sticky="ew")
+        self.clear_materia_button.grid(row=1, column=1, padx=5, pady=2, sticky="ew")
 
-        # Tabla de materias (más espacio)
+        # Tabla de materias
         table_frame = ttk.LabelFrame(
             self.materias_frame,
             text="Registro de Materias",
-            padding="5",
+            padding="10",
             style="Title.TLabelframe"
         )
-        table_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
+        table_frame.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
         table_frame.grid_columnconfigure(0, weight=1)
         table_frame.grid_rowconfigure(0, weight=1)
         
