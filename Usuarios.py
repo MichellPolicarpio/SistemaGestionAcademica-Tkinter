@@ -1,0 +1,1306 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+import pymongo
+from pymongo.errors import ConnectionFailure, ConfigurationError
+import re
+from PIL import Image, ImageTk
+import os
+
+# --- Configuración ---
+MONGO_URI = "mongodb+srv://michellpolicarpio:policarpio@cluster0.2yrckuk.mongodb.net/"
+DATABASE_NAME = "Usuarios"
+
+# Colecciones
+COLLECTIONS = {
+    'estudiantes': "Alumnos",
+    'materias': "Materias",
+    'profesores': "Profesores"
+}
+
+# Lista predefinida de carreras
+CARRERAS = [
+    "Ingeniería Mecatrónica",
+    "Ingeniería Electrónica",
+    "Ingeniería Informática"
+]
+
+# Lista predefinida de departamentos
+DEPARTAMENTOS = [
+    "Departamento de Eléctrica",
+    "Departamento de Electrónica",
+    "Departamento de Informática",
+    "Departamento de Mecatrónica"
+]
+
+# Colores 
+COLORS = {
+    'primary': '#003366',      # Azul marino institucional
+    'secondary': '#990000',    # Rojo institucional
+    'accent': '#FFD700',       # Dorado para acentos
+    'bg': '#F5F5F5',          # Fondo claro
+    'text': '#000000',         # Texto negro
+    'success': '#28a745',      # Verde para éxito
+    'warning': '#ffc107',      # Amarillo para advertencias
+    'error': '#dc3545',        # Rojo para errores
+    'info': '#17a2b8',         # Azul para información
+    'button_text': '#000000',  # Texto negro para botones
+    'button_bg': '#E0E0E0',    # Fondo gris claro para botones
+    'button_active': '#CCCCCC', # Color gris más oscuro para botones activos
+    'section_title': '#003366', # Color para títulos de sección
+    'connect_button': '#17a2b8', # Azul para botón de conexión
+    'refresh_button': '#28a745', # Verde para botón de refrescar
+    'add_button': '#28a745',    # Verde para botón de agregar
+    'update_button': '#ffc107', # Amarillo para botón de actualizar
+    'delete_button': '#dc3545', # Rojo para botón de eliminar
+    'clear_button': '#6c757d',  # Gris para botón de limpiar
+    'button_text_light': '#E8E8E8', # Texto claro para botones oscuros
+    'button_text_dark': '#1A1A1A',   # Texto oscuro para botones claros
+    'button_text_blue': '#003366',   # Texto azul oscuro
+    'button_text_green': '#004d00',  # Texto verde oscuro
+    'button_text_red': '#8b0000',    # Texto rojo oscuro
+    'button_text_gray': '#333333'    # Texto gris oscuro
+}
+
+# Columnas esperadas por tabla
+EXPECTED_COLUMNS = {
+    'estudiantes': ['nombre', 'matricula', 'carrera'],
+    'materias': ['codigo', 'nombre', 'creditos', 'carreras'],
+    'profesores': ['nombre', 'licenciatura', 'email']
+}
+
+class MongoViewerApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Sistema de Gestión Académica - FIEE")
+        self.root.geometry("1000x800")
+        
+        # Configurar tema y estilo
+        self.style = ttk.Style()
+        self.configure_styles()
+        
+        # Configurar color de fondo
+        self.root.configure(bg=COLORS['bg'])
+
+        self.client = None
+        self.db = None
+        self.collection = None
+        self.selected_item = None
+        self.current_section = 'estudiantes'
+
+        self.create_widgets()
+        self.configure_layout()
+        self.create_menu()
+        self.load_logo()
+
+    def load_logo(self):
+        try:
+            # Cargar y redimensionar el logo
+            logo_path = "FIEE.png"
+            if os.path.exists(logo_path):
+                logo_img = Image.open(logo_path)
+                # Redimensionar manteniendo la proporción
+                logo_img = logo_img.resize((100, 100), Image.Resampling.LANCZOS)
+                self.logo_photo = ImageTk.PhotoImage(logo_img)
+                
+                # Crear y posicionar el label del logo
+                self.logo_label = ttk.Label(
+                    self.control_frame,
+                    image=self.logo_photo,
+                    background=COLORS['bg']
+                )
+                self.logo_label.grid(row=0, column=3, padx=5, pady=5)
+            else:
+                print("Logo no encontrado en:", logo_path)
+        except Exception as e:
+            print("Error al cargar el logo:", e)
+
+    def configure_styles(self):
+        # Estilo general
+        self.style.configure(".",
+            font=('Helvetica', 10),
+            background=COLORS['bg'],
+            foreground=COLORS['text']
+        )
+        
+        # Estilo para frames con título
+        self.style.configure("Title.TLabelframe",
+            background=COLORS['bg'],
+            foreground=COLORS['section_title'],
+            font=('Helvetica', 12, 'bold'),
+            borderwidth=2,
+            relief="solid"
+        )
+        self.style.configure("Title.TLabelframe.Label",
+            font=('Helvetica', 12, 'bold'),
+            foreground=COLORS['section_title'],
+            background=COLORS['bg'],
+            padding=(10, 5)
+        )
+        
+        # Estilos específicos para cada tipo de botón
+        self.style.configure("Connect.TButton",
+            background=COLORS['connect_button'],
+            foreground=COLORS['button_text_blue'],
+            font=('Helvetica', 10, 'bold'),
+            padding=(20, 5),  # Más padding horizontal, menos vertical
+            borderwidth=2,
+            relief="raised"
+        )
+        self.style.map("Connect.TButton",
+            background=[('active', '#138496')],
+            foreground=[('active', COLORS['button_text_blue'])]
+        )
+        
+        self.style.configure("Refresh.TButton",
+            background=COLORS['refresh_button'],
+            foreground=COLORS['button_text_green'],
+            font=('Helvetica', 10, 'bold'),
+            padding=(20, 5),  # Más padding horizontal, menos vertical
+            borderwidth=2,
+            relief="raised"
+        )
+        self.style.map("Refresh.TButton",
+            background=[('active', '#218838')],
+            foreground=[('active', COLORS['button_text_green'])]
+        )
+        
+        self.style.configure("Add.TButton",
+            background=COLORS['add_button'],
+            foreground=COLORS['button_text_green'],
+            font=('Helvetica', 10, 'bold'),
+            padding=(20, 5),  # Más padding horizontal, menos vertical
+            borderwidth=2,
+            relief="raised"
+        )
+        self.style.map("Add.TButton",
+            background=[('active', '#218838')],
+            foreground=[('active', COLORS['button_text_green'])]
+        )
+        
+        self.style.configure("Update.TButton",
+            background=COLORS['update_button'],
+            foreground=COLORS['button_text_dark'],
+            font=('Helvetica', 10, 'bold'),
+            padding=(20, 5),  # Más padding horizontal, menos vertical
+            borderwidth=2,
+            relief="raised"
+        )
+        self.style.map("Update.TButton",
+            background=[('active', '#e0a800')],
+            foreground=[('active', COLORS['button_text_dark'])]
+        )
+        
+        self.style.configure("Delete.TButton",
+            background=COLORS['delete_button'],
+            foreground=COLORS['button_text_red'],
+            font=('Helvetica', 10, 'bold'),
+            padding=(20, 5),  # Más padding horizontal, menos vertical
+            borderwidth=2,
+            relief="raised"
+        )
+        self.style.map("Delete.TButton",
+            background=[('active', '#bd2130')],
+            foreground=[('active', COLORS['button_text_red'])]
+        )
+        
+        self.style.configure("Clear.TButton",
+            background=COLORS['clear_button'],
+            foreground=COLORS['button_text_gray'],
+            font=('Helvetica', 10, 'bold'),
+            padding=(20, 5),  # Más padding horizontal, menos vertical
+            borderwidth=2,
+            relief="raised"
+        )
+        self.style.map("Clear.TButton",
+            background=[('active', '#5a6268')],
+            foreground=[('active', COLORS['button_text_gray'])]
+        )
+        
+        # Estilo para etiquetas
+        self.style.configure("TLabel",
+            font=('Helvetica', 10, 'bold'),
+            background=COLORS['bg'],
+            foreground=COLORS['text'],
+            padding=(5, 5)
+        )
+        
+        # Estilo para entradas
+        self.style.configure("TEntry",
+            fieldbackground='white',
+            foreground=COLORS['text'],
+            padding=8,
+            borderwidth=2,
+            relief="solid"
+        )
+        
+        # Estilo para Treeview
+        self.style.configure("Treeview",
+            font=('Helvetica', 10),
+            rowheight=25,
+            background='white',
+            fieldbackground='white',
+            foreground=COLORS['text']
+        )
+        self.style.configure("Treeview.Heading",
+            font=('Helvetica', 10, 'bold'),
+            background=COLORS['button_bg'],
+            foreground=COLORS['button_text']
+        )
+        self.style.map("Treeview",
+            background=[('selected', COLORS['button_bg'])],
+            foreground=[('selected', COLORS['button_text'])]
+        )
+
+    def configure_layout(self):
+        # Configurar el frame principal para que se expanda
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+        
+        # Configurar el main_frame para que se expanda
+        self.main_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+        self.main_frame.grid_rowconfigure(1, weight=1)  # Más peso para el notebook
+        self.main_frame.grid_columnconfigure(0, weight=1)
+        
+        # Configurar el control_frame
+        self.control_frame.grid(row=0, column=0, sticky="ew", pady=(0, 5))
+        self.control_frame.grid_columnconfigure(0, weight=1)
+        self.control_frame.grid_columnconfigure(1, weight=1)
+        self.control_frame.grid_columnconfigure(2, weight=2)
+        self.control_frame.grid_columnconfigure(3, weight=1)
+
+        # Configurar el notebook
+        self.notebook.grid(row=1, column=0, sticky="nsew", pady=5)
+        
+        # Configurar los frames de las pestañas
+        for frame in [self.estudiantes_frame, self.materias_frame, self.profesores_frame]:
+            frame.grid_columnconfigure(0, weight=1)
+            frame.grid_rowconfigure(1, weight=1)  # Más peso para la tabla
+
+    def create_menu(self):
+        menubar = tk.Menu(self.root, bg=COLORS['button_bg'], fg=COLORS['button_text'])
+        self.root.config(menu=menubar)
+
+        # Menú Archivo
+        file_menu = tk.Menu(
+            menubar,
+            tearoff=0,
+            bg=COLORS['bg'],
+            fg=COLORS['text'],
+            activebackground=COLORS['button_bg'],
+            activeforeground=COLORS['button_text']
+        )
+        file_menu.add_command(label="Conectar", command=self.connect_mongo)
+        file_menu.add_command(label="Refrescar", command=self.load_data)
+        file_menu.add_separator()
+        file_menu.add_command(label="Salir", command=self.on_closing)
+        menubar.add_cascade(label="Archivo", menu=file_menu)
+
+        # Menú Ayuda
+        help_menu = tk.Menu(
+            menubar,
+            tearoff=0,
+            bg=COLORS['bg'],
+            fg=COLORS['text'],
+            activebackground=COLORS['button_bg'],
+            activeforeground=COLORS['button_text']
+        )
+        help_menu.add_command(label="Ayuda", command=self.show_help)
+        help_menu.add_command(label="Acerca de", command=self.show_about)
+        menubar.add_cascade(label="Ayuda", menu=help_menu)
+
+    def create_widgets(self):
+        # --- Frame Principal ---
+        self.main_frame = ttk.Frame(self.root, padding="10", style="Title.TLabelframe")
+        
+        # --- Frame Superior (Controles) ---
+        self.control_frame = ttk.LabelFrame(
+            self.main_frame,
+            text="Panel de Control",
+            padding="10",
+            style="Title.TLabelframe"
+        )
+        
+        # Botones principales
+        self.connect_button = ttk.Button(
+            self.control_frame, 
+            text="Conectar a MongoDB",
+            command=self.connect_mongo,
+            style="Connect.TButton"
+        )
+        self.connect_button.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+
+        self.refresh_button = ttk.Button(
+            self.control_frame,
+            text="Refrescar Datos",
+            command=self.load_data,
+            state=tk.DISABLED,
+            style="Refresh.TButton"
+        )
+        self.refresh_button.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+
+        self.status_label = ttk.Label(
+            self.control_frame,
+            text="Estado: Desconectado",
+            foreground=COLORS['error'],
+            style="TLabel"
+        )
+        self.status_label.grid(row=0, column=2, padx=10, sticky="e")
+
+        # Cargar el logo
+        self.load_logo()
+
+        # --- Notebook para pestañas ---
+        self.notebook = ttk.Notebook(self.main_frame)
+        self.notebook.grid(row=1, column=0, sticky="nsew", pady=5)
+
+        # Crear frames para cada sección
+        self.estudiantes_frame = ttk.Frame(self.notebook)
+        self.materias_frame = ttk.Frame(self.notebook)
+        self.profesores_frame = ttk.Frame(self.notebook)
+
+        # Configurar expansión de frames
+        for frame in [self.estudiantes_frame, self.materias_frame, self.profesores_frame]:
+            frame.grid_columnconfigure(0, weight=1)
+            frame.grid_rowconfigure(1, weight=1)
+
+        # Agregar pestañas al notebook
+        self.notebook.add(self.estudiantes_frame, text="Estudiantes")
+        self.notebook.add(self.materias_frame, text="Materias")
+        self.notebook.add(self.profesores_frame, text="Profesores")
+
+        # Configurar eventos de cambio de pestaña
+        self.notebook.bind('<<NotebookTabChanged>>', self.on_tab_change)
+
+        # Crear widgets para cada sección
+        self.create_estudiantes_widgets()
+        self.create_materias_widgets()
+        self.create_profesores_widgets()
+
+    def on_tab_change(self, event):
+        # Obtener el índice de la pestaña seleccionada
+        current_tab = self.notebook.index(self.notebook.select())
+        sections = ['estudiantes', 'materias', 'profesores']
+        self.current_section = sections[current_tab]
+        
+        # Actualizar la colección actual
+        if self.db is not None:
+            self.collection = self.db[COLLECTIONS[self.current_section]]
+            self.load_data()
+
+    def create_estudiantes_widgets(self):
+        # Frame para gestión de estudiantes
+        self.student_frame = ttk.LabelFrame(
+            self.estudiantes_frame,
+            text="Gestión de Estudiantes",
+            padding="10",
+            style="Title.TLabelframe"
+        )
+        self.student_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+        self.student_frame.grid_columnconfigure(1, weight=1)
+        
+        # Frame para campos de entrada
+        input_frame = ttk.Frame(self.student_frame)
+        input_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
+        input_frame.grid_columnconfigure(1, weight=1)
+        
+        # Campos de entrada para estudiantes
+        self.nombre_label = ttk.Label(input_frame, text="Nombre:", style="TLabel")
+        self.nombre_label.grid(row=0, column=0, sticky="w", padx=(0, 5), pady=2)
+        self.nombre_entry = ttk.Entry(input_frame, width=30, style="TEntry")
+        self.nombre_entry.grid(row=0, column=1, sticky="ew", pady=2)
+
+        self.matricula_label = ttk.Label(input_frame, text="Matrícula:", style="TLabel")
+        self.matricula_label.grid(row=1, column=0, sticky="w", padx=(0, 5), pady=2)
+        self.matricula_entry = ttk.Entry(input_frame, width=20, style="TEntry")
+        self.matricula_entry.grid(row=1, column=1, sticky="ew", pady=2)
+
+        self.carrera_label = ttk.Label(input_frame, text="Carrera:", style="TLabel")
+        self.carrera_label.grid(row=2, column=0, sticky="w", padx=(0, 5), pady=2)
+        self.carrera_var = tk.StringVar()
+        self.carrera_entry = ttk.Combobox(
+            input_frame,
+            textvariable=self.carrera_var,
+            values=CARRERAS,
+            width=30,
+            style="TEntry"
+        )
+        self.carrera_entry.grid(row=2, column=1, sticky="ew", pady=2)
+        self.carrera_entry.bind('<KeyRelease>', self.filter_carreras)
+        self.carrera_entry.bind('<<ComboboxSelected>>', self.on_carrera_select)
+
+        # Frame para botones
+        button_frame = ttk.Frame(self.student_frame)
+        button_frame.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
+        button_frame.grid_columnconfigure(0, weight=1)
+        button_frame.grid_columnconfigure(1, weight=1)
+        button_frame.grid_rowconfigure(0, weight=1)
+        button_frame.grid_rowconfigure(1, weight=1)
+
+        # Botones CRUD para estudiantes
+        self.add_student_button = ttk.Button(
+            button_frame,
+            text="Agregar",
+            command=self.add_alumno,
+            state=tk.DISABLED,
+            style="Add.TButton",
+            width=12
+        )
+        self.add_student_button.grid(row=0, column=0, padx=5, pady=2, sticky="ew")
+
+        self.update_student_button = ttk.Button(
+            button_frame,
+            text="Actualizar",
+            command=self.update_alumno,
+            state=tk.DISABLED,
+            style="Update.TButton",
+            width=12
+        )
+        self.update_student_button.grid(row=0, column=1, padx=5, pady=2, sticky="ew")
+
+        self.delete_student_button = ttk.Button(
+            button_frame,
+            text="Eliminar",
+            command=self.delete_alumno,
+            state=tk.DISABLED,
+            style="Delete.TButton",
+            width=12
+        )
+        self.delete_student_button.grid(row=1, column=0, padx=5, pady=2, sticky="ew")
+
+        self.clear_student_button = ttk.Button(
+            button_frame,
+            text="Limpiar",
+            command=self.clear_fields,
+            style="Clear.TButton",
+            width=12
+        )
+        self.clear_student_button.grid(row=1, column=1, padx=5, pady=2, sticky="ew")
+
+        # Tabla de estudiantes
+        self.create_treeview(self.estudiantes_frame, 'estudiantes')
+
+    def create_materias_widgets(self):
+        # Frame para gestión de materias
+        self.materias_control_frame = ttk.LabelFrame(
+            self.materias_frame,
+            text="Gestión de Materias",
+            padding="5",
+            style="Title.TLabelframe"
+        )
+        self.materias_control_frame.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
+        self.materias_control_frame.grid_columnconfigure(1, weight=1)
+        
+        # Frame para campos de entrada
+        input_frame = ttk.Frame(self.materias_control_frame)
+        input_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 5))
+        
+        # Campos de entrada para materias en una disposición más compacta
+        # Primera fila: Código y Créditos
+        row1_frame = ttk.Frame(input_frame)
+        row1_frame.grid(row=0, column=0, sticky="ew", pady=2)
+        
+        self.codigo_label = ttk.Label(row1_frame, text="Código:", style="TLabel", width=8)
+        self.codigo_label.grid(row=0, column=0, padx=(0, 5))
+        self.codigo_entry = ttk.Entry(row1_frame, width=15, style="TEntry")
+        self.codigo_entry.grid(row=0, column=1, padx=(0, 10))
+
+        self.creditos_label = ttk.Label(row1_frame, text="Créditos:", style="TLabel", width=8)
+        self.creditos_label.grid(row=0, column=2, padx=(0, 5))
+        self.creditos_entry = ttk.Entry(row1_frame, width=8, style="TEntry")
+        self.creditos_entry.grid(row=0, column=3)
+
+        # Segunda fila: Nombre
+        self.nombre_materia_label = ttk.Label(input_frame, text="Nombre:", style="TLabel")
+        self.nombre_materia_label.grid(row=1, column=0, sticky="w", pady=2)
+        self.nombre_materia_entry = ttk.Entry(input_frame, width=40, style="TEntry")
+        self.nombre_materia_entry.grid(row=1, column=0, sticky="ew", pady=2)
+
+        # Frame para lista de carreras (más compacto)
+        carreras_frame = ttk.LabelFrame(input_frame, text="Carreras", padding="2")
+        carreras_frame.grid(row=2, column=0, sticky="ew", pady=2)
+        
+        # Lista de carreras con checkboxes en dos columnas
+        self.carreras_vars = {}
+        for i, carrera in enumerate(CARRERAS):
+            var = tk.BooleanVar()
+            self.carreras_vars[carrera] = var
+            cb = ttk.Checkbutton(
+                carreras_frame,
+                text=carrera,
+                variable=var,
+                style="TCheckbutton"
+            )
+            cb.grid(row=i//2, column=i%2, sticky="w", padx=5, pady=1)
+
+        # Frame para botones (más compacto)
+        button_frame = ttk.Frame(self.materias_control_frame)
+        button_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
+        button_frame.grid_columnconfigure(0, weight=1)
+        button_frame.grid_columnconfigure(1, weight=1)
+        button_frame.grid_rowconfigure(0, weight=1)
+        button_frame.grid_rowconfigure(1, weight=1)
+        
+        # Botones CRUD para materias en disposición 2x2
+        self.add_materia_button = ttk.Button(
+            button_frame,
+            text="Agregar",
+            command=self.add_materia,
+            state=tk.DISABLED,
+            style="Add.TButton",
+            width=10
+        )
+        self.add_materia_button.grid(row=0, column=0, padx=2, pady=2, sticky="ew")
+
+        self.update_materia_button = ttk.Button(
+            button_frame,
+            text="Actualizar",
+            command=self.update_materia,
+            state=tk.DISABLED,
+            style="Update.TButton",
+            width=10
+        )
+        self.update_materia_button.grid(row=0, column=1, padx=2, pady=2, sticky="ew")
+
+        self.delete_materia_button = ttk.Button(
+            button_frame,
+            text="Eliminar",
+            command=self.delete_materia,
+            state=tk.DISABLED,
+            style="Delete.TButton",
+            width=10
+        )
+        self.delete_materia_button.grid(row=1, column=0, padx=2, pady=2, sticky="ew")
+
+        self.clear_materia_button = ttk.Button(
+            button_frame,
+            text="Limpiar",
+            command=self.clear_materia_fields,
+            style="Clear.TButton",
+            width=10
+        )
+        self.clear_materia_button.grid(row=1, column=1, padx=2, pady=2, sticky="ew")
+
+        # Tabla de materias (más espacio)
+        table_frame = ttk.LabelFrame(
+            self.materias_frame,
+            text="Registro de Materias",
+            padding="5",
+            style="Title.TLabelframe"
+        )
+        table_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
+        table_frame.grid_columnconfigure(0, weight=1)
+        table_frame.grid_rowconfigure(0, weight=1)
+        
+        # Crear Treeview
+        self.materias_tree = ttk.Treeview(
+            table_frame,
+            columns=EXPECTED_COLUMNS['materias'],
+            show='headings',
+            height=15,
+            style="Treeview"
+        )
+
+        # Configurar columnas
+        column_widths = {
+            'codigo': 100,
+            'nombre': 300,
+            'creditos': 100,
+            'carreras': 400
+        }
+
+        for col in EXPECTED_COLUMNS['materias']:
+            self.materias_tree.heading(col, text=col.capitalize(), command=lambda c=col: self.sort_treeview(c))
+            width = column_widths.get(col, 150)
+            self.materias_tree.column(col, anchor=tk.W, width=width, minwidth=width)
+
+        # Scrollbars
+        vsb = ttk.Scrollbar(table_frame, orient="vertical", command=self.materias_tree.yview)
+        hsb = ttk.Scrollbar(table_frame, orient="horizontal", command=self.materias_tree.xview)
+        self.materias_tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+
+        # Posicionar Treeview y Scrollbars
+        self.materias_tree.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+        vsb.grid(row=0, column=1, sticky="ns", pady=5)
+        hsb.grid(row=1, column=0, sticky="ew", padx=5)
+
+        # Binding para selección
+        self.materias_tree.bind('<<TreeviewSelect>>', lambda e: self.on_select(e, 'materias'))
+
+    def create_profesores_widgets(self):
+        # Frame para gestión de profesores
+        self.profesores_frame = ttk.LabelFrame(
+            self.profesores_frame,
+            text="Gestión de Profesores",
+            padding="10",
+            style="Title.TLabelframe"
+        )
+        self.profesores_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+        self.profesores_frame.grid_columnconfigure(1, weight=1)
+        
+        # Frame para campos de entrada
+        input_frame = ttk.Frame(self.profesores_frame)
+        input_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
+        input_frame.grid_columnconfigure(1, weight=1)
+        
+        # Campos de entrada para profesores
+        self.nombre_prof_label = ttk.Label(input_frame, text="Nombre:", style="TLabel")
+        self.nombre_prof_label.grid(row=0, column=0, sticky="w", padx=(0, 5), pady=2)
+        self.nombre_prof_entry = ttk.Entry(input_frame, width=30, style="TEntry")
+        self.nombre_prof_entry.grid(row=0, column=1, sticky="ew", pady=2)
+
+        self.licenciatura_label = ttk.Label(input_frame, text="Licenciatura:", style="TLabel")
+        self.licenciatura_label.grid(row=1, column=0, sticky="w", padx=(0, 5), pady=2)
+        self.licenciatura_entry = ttk.Entry(input_frame, width=30, style="TEntry")
+        self.licenciatura_entry.grid(row=1, column=1, sticky="ew", pady=2)
+
+        self.email_label = ttk.Label(input_frame, text="Email:", style="TLabel")
+        self.email_label.grid(row=2, column=0, sticky="w", padx=(0, 5), pady=2)
+        self.email_entry = ttk.Entry(input_frame, width=30, style="TEntry")
+        self.email_entry.grid(row=2, column=1, sticky="ew", pady=2)
+
+        # Frame para botones
+        button_frame = ttk.Frame(self.profesores_frame)
+        button_frame.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
+        button_frame.grid_columnconfigure(0, weight=1)
+        button_frame.grid_columnconfigure(1, weight=1)
+        button_frame.grid_rowconfigure(0, weight=1)
+        button_frame.grid_rowconfigure(1, weight=1)
+
+        # Botones CRUD para profesores
+        self.add_profesor_button = ttk.Button(
+            button_frame,
+            text="Agregar",
+            command=self.add_profesor,
+            state=tk.DISABLED,
+            style="Add.TButton",
+            width=12
+        )
+        self.add_profesor_button.grid(row=0, column=0, padx=5, pady=2, sticky="ew")
+
+        self.update_profesor_button = ttk.Button(
+            button_frame,
+            text="Actualizar",
+            command=self.update_profesor,
+            state=tk.DISABLED,
+            style="Update.TButton",
+            width=12
+        )
+        self.update_profesor_button.grid(row=0, column=1, padx=5, pady=2, sticky="ew")
+
+        self.delete_profesor_button = ttk.Button(
+            button_frame,
+            text="Eliminar",
+            command=self.delete_profesor,
+            state=tk.DISABLED,
+            style="Delete.TButton",
+            width=12
+        )
+        self.delete_profesor_button.grid(row=1, column=0, padx=5, pady=2, sticky="ew")
+
+        self.clear_profesor_button = ttk.Button(
+            button_frame,
+            text="Limpiar",
+            command=self.clear_profesor_fields,
+            style="Clear.TButton",
+            width=12
+        )
+        self.clear_profesor_button.grid(row=1, column=1, padx=5, pady=2, sticky="ew")
+
+        # Tabla de profesores
+        self.create_treeview(self.profesores_frame, 'profesores')
+
+    def create_treeview(self, parent, section):
+        # Frame para la tabla
+        table_frame = ttk.LabelFrame(
+            parent,
+            text=f"Registro de {section.capitalize()}",
+            padding="10",
+            style="Title.TLabelframe"
+        )
+        table_frame.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
+        table_frame.grid_columnconfigure(0, weight=1)
+        table_frame.grid_rowconfigure(0, weight=1)
+        
+        # Crear Treeview
+        tree = ttk.Treeview(
+            table_frame,
+            columns=EXPECTED_COLUMNS[section],
+            show='headings',
+            height=15,
+            style="Treeview"
+        )
+
+        # Configurar columnas con anchos específicos
+        column_widths = {
+            'estudiantes': {
+                'nombre': 300,
+                'matricula': 150,
+                'carrera': 250
+            },
+            'materias': {
+                'codigo': 100,
+                'nombre': 300,
+                'creditos': 100,
+                'carreras': 400
+            },
+            'profesores': {
+                'nombre': 300,
+                'licenciatura': 250,
+                'email': 250
+            }
+        }
+
+        # Configurar columnas
+        for col in EXPECTED_COLUMNS[section]:
+            tree.heading(col, text=col.capitalize(), command=lambda c=col: self.sort_treeview(c))
+            width = column_widths[section].get(col, 150)  # Ancho por defecto si no está especificado
+            tree.column(col, anchor=tk.W, width=width, minwidth=width)
+
+        # Scrollbars
+        vsb = ttk.Scrollbar(
+            table_frame,
+            orient="vertical",
+            command=tree.yview
+        )
+        hsb = ttk.Scrollbar(
+            table_frame,
+            orient="horizontal",
+            command=tree.xview
+        )
+        tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+
+        # Posicionar Treeview y Scrollbars
+        tree.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+        vsb.grid(row=0, column=1, sticky="ns", pady=5)
+        hsb.grid(row=1, column=0, sticky="ew", padx=5)
+
+        # Binding para selección
+        tree.bind('<<TreeviewSelect>>', lambda e: self.on_select(e, section))
+
+        # Guardar referencia al treeview
+        setattr(self, f'{section}_tree', tree)
+
+    def filter_carreras(self, event=None):
+        """Filtrar carreras basado en el texto ingresado"""
+        search_term = self.carrera_var.get().lower()
+        filtered_carreras = [carrera for carrera in CARRERAS if search_term in carrera.lower()]
+        self.carrera_entry['values'] = filtered_carreras
+        self.carrera_entry.event_generate('<Down>')
+
+    def on_carrera_select(self, event=None):
+        """Manejar la selección de una carrera"""
+        selected = self.carrera_var.get()
+        if selected in CARRERAS:
+            self.carrera_entry.set(selected)
+
+    def connect_mongo(self):
+        self.status_label.config(text="Estado: Conectando...", foreground=COLORS['warning'])
+        self.root.update_idletasks()
+
+        try:
+            self.client = pymongo.MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+            self.client.admin.command('ping')
+            self.db = self.client[DATABASE_NAME]
+
+            # Habilitar botones para todas las secciones
+            self.refresh_button.config(state=tk.NORMAL)
+            self.add_student_button.config(state=tk.NORMAL)
+            self.add_materia_button.config(state=tk.NORMAL)
+            self.add_profesor_button.config(state=tk.NORMAL)
+            
+            # Cargar datos para todas las secciones
+            for section in ['estudiantes', 'materias', 'profesores']:
+                self.current_section = section
+                self.collection = self.db[COLLECTIONS[section]]
+                self.load_data()
+            
+            self.status_label.config(
+                text=f"Estado: Conectado a {DATABASE_NAME}",
+                foreground=COLORS['success']
+            )
+            messagebox.showinfo("Conexión Exitosa", "Conectado a MongoDB correctamente.")
+
+        except Exception as e:
+            self.status_label.config(text="Estado: Error de Conexión", foreground=COLORS['error'])
+            messagebox.showerror("Error de Conexión", f"No se pudo conectar a MongoDB.\nError: {e}")
+            self.client = None
+            self.db = None
+            self.disable_buttons()
+
+    def load_data(self):
+        if self.db is None:
+            messagebox.showwarning("No Conectado", "Por favor, conecta a MongoDB primero.")
+            return
+
+        try:
+            self.status_label.config(text="Estado: Cargando datos...", foreground=COLORS['info'])
+            self.root.update_idletasks()
+
+            # Obtener el árbol correspondiente a la sección actual
+            tree = getattr(self, f'{self.current_section}_tree')
+
+            # Limpiar tabla
+            for item in tree.get_children():
+                tree.delete(item)
+
+            # Cargar datos
+            collection = self.db[COLLECTIONS[self.current_section]]
+            documents = list(collection.find())
+
+            if not documents:
+                messagebox.showinfo("Información", f"No hay {self.current_section} registrados.")
+                self.status_label.config(
+                    text=f"Estado: Conectado a {DATABASE_NAME}/{COLLECTIONS[self.current_section]} (Vacía)",
+                    foreground=COLORS['success']
+                )
+                return
+
+            # Insertar datos en la tabla
+            for doc in documents:
+                values = [str(doc.get(col, '')) for col in EXPECTED_COLUMNS[self.current_section]]
+                tree.insert('', tk.END, values=values)
+
+            self.status_label.config(
+                text=f"Estado: Conectado ({len(documents)} {self.current_section})",
+                foreground=COLORS['success']
+            )
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al cargar datos: {e}")
+            self.status_label.config(text="Estado: Error al cargar", foreground=COLORS['error'])
+
+    def add_alumno(self):
+        if not self.validate_fields():
+            return
+
+        try:
+            alumno_data = {
+                "nombre": self.nombre_entry.get().strip(),
+                "matricula": self.matricula_entry.get().strip(),
+                "carrera": self.carrera_entry.get().strip()
+            }
+
+            # Verificar si la matrícula ya existe
+            if self.db[COLLECTIONS['estudiantes']].find_one({"matricula": alumno_data["matricula"]}):
+                messagebox.showerror("Error", "Ya existe un estudiante con esta matrícula.")
+                return
+
+            self.db[COLLECTIONS['estudiantes']].insert_one(alumno_data)
+            messagebox.showinfo("Éxito", "Estudiante agregado correctamente.")
+            self.clear_fields()
+            self.load_data()
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al agregar estudiante: {e}")
+
+    def update_alumno(self):
+        if not self.selected_item or not self.validate_fields():
+            return
+
+        try:
+            matricula = self.matricula_entry.get().strip()
+            alumno_data = {
+                "nombre": self.nombre_entry.get().strip(),
+                "matricula": matricula,
+                "carrera": self.carrera_entry.get().strip()
+            }
+
+            # Verificar si la nueva matrícula ya existe (si se cambió)
+            existing = self.db[COLLECTIONS['estudiantes']].find_one({"matricula": matricula})
+            if existing and str(existing.get("_id")) != str(self.selected_item):
+                messagebox.showerror("Error", "Ya existe un estudiante con esta matrícula.")
+                return
+
+            self.db[COLLECTIONS['estudiantes']].update_one(
+                {"_id": self.selected_item},
+                {"$set": alumno_data}
+            )
+            messagebox.showinfo("Éxito", "Estudiante actualizado correctamente.")
+            self.clear_fields()
+            self.load_data()
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al actualizar estudiante: {e}")
+
+    def delete_alumno(self):
+        if not self.selected_item:
+            messagebox.showwarning("Advertencia", "Por favor, selecciona un estudiante para eliminar.")
+            return
+
+        if messagebox.askyesno("Confirmar", "¿Estás seguro de eliminar este estudiante?"):
+            try:
+                self.db[COLLECTIONS['estudiantes']].delete_one({"_id": self.selected_item})
+                messagebox.showinfo("Éxito", "Estudiante eliminado correctamente.")
+                self.clear_fields()
+                self.load_data()
+            except Exception as e:
+                messagebox.showerror("Error", f"Error al eliminar estudiante: {e}")
+
+    def validate_fields(self):
+        nombre = self.nombre_entry.get().strip()
+        matricula = self.matricula_entry.get().strip()
+        carrera = self.carrera_entry.get().strip()
+
+        if not all([nombre, matricula, carrera]):
+            messagebox.showerror("Error", "Por favor, completa todos los campos.")
+            return False
+
+        # Validar formato de matrícula (ejemplo: zS21002379)
+        if not re.match(r'^zS\d{8}$', matricula):
+            messagebox.showerror("Error", "Formato de matrícula inválido. Debe ser 'zS' seguido de 8 dígitos.")
+            return False
+
+        return True
+
+    def clear_fields(self):
+        self.nombre_entry.delete(0, tk.END)
+        self.matricula_entry.delete(0, tk.END)
+        self.carrera_entry.delete(0, tk.END)
+        self.selected_item = None
+        self.update_student_button.config(state=tk.DISABLED)
+        self.delete_student_button.config(state=tk.DISABLED)
+
+    def on_select(self, event, section):
+        tree = getattr(self, f'{section}_tree')
+        selected_items = tree.selection()
+        if not selected_items:
+            return
+
+        item = selected_items[0]
+        values = tree.item(item)['values']
+        
+        # Obtener el ID del documento seleccionado
+        if section == 'estudiantes':
+            doc = self.db[COLLECTIONS['estudiantes']].find_one({"matricula": values[1]})
+            if doc:
+                self.selected_item = doc["_id"]
+                self.nombre_entry.delete(0, tk.END)
+                self.nombre_entry.insert(0, values[0])
+                self.matricula_entry.delete(0, tk.END)
+                self.matricula_entry.insert(0, values[1])
+                self.carrera_var.set(values[2])
+                self.update_student_button.config(state=tk.NORMAL)
+                self.delete_student_button.config(state=tk.NORMAL)
+        elif section == 'materias':
+            try:
+                # Convertir el código a string para asegurar una comparación consistente
+                codigo = str(values[0]).strip()
+                doc = self.db[COLLECTIONS['materias']].find_one({"codigo": codigo})
+                
+                if doc:
+                    self.selected_item = doc["_id"]
+                    self.codigo_entry.delete(0, tk.END)
+                    self.codigo_entry.insert(0, codigo)
+                    self.nombre_materia_entry.delete(0, tk.END)
+                    self.nombre_materia_entry.insert(0, values[1])
+                    self.creditos_entry.delete(0, tk.END)
+                    self.creditos_entry.insert(0, values[2])
+                    
+                    # Obtener las carreras del documento
+                    carreras = doc.get("carreras", [])
+                    
+                    # Actualizar los checkboxes
+                    for carrera, var in self.carreras_vars.items():
+                        var.set(carrera in carreras)
+                    
+                    self.update_materia_button.config(state=tk.NORMAL)
+                    self.delete_materia_button.config(state=tk.NORMAL)
+                else:
+                    messagebox.showwarning("Advertencia", f"No se encontró la materia con código {codigo}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Error al seleccionar materia: {e}")
+        elif section == 'profesores':
+            doc = self.db[COLLECTIONS['profesores']].find_one({"email": values[2]})
+            if doc:
+                self.selected_item = doc["_id"]
+                self.nombre_prof_entry.delete(0, tk.END)
+                self.nombre_prof_entry.insert(0, values[0])
+                self.licenciatura_entry.delete(0, tk.END)
+                self.licenciatura_entry.insert(0, values[1])
+                self.email_entry.delete(0, tk.END)
+                self.email_entry.insert(0, values[2])
+                self.update_profesor_button.config(state=tk.NORMAL)
+                self.delete_profesor_button.config(state=tk.NORMAL)
+
+    def sort_treeview(self, col):
+        """Ordenar la tabla por la columna seleccionada"""
+        items = [(self.tree.set(item, col), item) for item in self.tree.get_children('')]
+        items.sort()
+        for index, (_, item) in enumerate(items):
+            self.tree.move(item, '', index)
+
+    def disable_buttons(self):
+        self.refresh_button.config(state=tk.DISABLED)
+        self.add_student_button.config(state=tk.DISABLED)
+        self.update_student_button.config(state=tk.DISABLED)
+        self.delete_student_button.config(state=tk.DISABLED)
+        self.add_materia_button.config(state=tk.DISABLED)
+        self.update_materia_button.config(state=tk.DISABLED)
+        self.delete_materia_button.config(state=tk.DISABLED)
+        self.add_profesor_button.config(state=tk.DISABLED)
+        self.update_profesor_button.config(state=tk.DISABLED)
+        self.delete_profesor_button.config(state=tk.DISABLED)
+
+    def show_help(self):
+        help_text = """
+        Sistema de Gestión de Estudiantes - FIEE
+
+        1. Conectar a MongoDB:
+           - Haz clic en "Conectar a MongoDB" o usa el menú Archivo > Conectar
+
+        2. Gestión de Estudiantes:
+           - Agregar: Completa los campos y haz clic en "Agregar"
+           - Actualizar: Selecciona un estudiante, modifica los campos y haz clic en "Actualizar"
+           - Eliminar: Selecciona un estudiante y haz clic en "Eliminar"
+           - Limpiar: Limpia todos los campos
+
+        3. Formato de Matrícula:
+           - Debe comenzar con 'zS' seguido de 8 dígitos
+           - Ejemplo: zS21002379
+
+        4. Estado de Conexión:
+        - Rojo: Desconectado
+        - Verde: Conectado
+        - Azul: Cargando datos
+        """
+        messagebox.showinfo("Ayuda", help_text)
+
+    def show_about(self):
+        about_text = """
+        Sistema de Gestión de Estudiantes - FIE
+        
+        Versión 2.0
+        
+        Desarrollado por: Michell Alexis Policarpio Moran
+        Matrícula: zS21002379
+        Materia: Base de Datos y en la Nube
+        Profesora: Primavera Lucho Arguelles
+        Facultad de Ingeniería Eléctrica y Electrónica
+        
+        © 2024 Todos los derechos reservados
+        """
+        messagebox.showinfo("Acerca de", about_text)
+
+    def on_closing(self):
+        if messagebox.askokcancel("Salir", "¿Estás seguro de que deseas salir?"):
+            if self.client:
+                self.client.close()
+            self.root.destroy()
+
+    def add_materia(self):
+        if not self.validate_materia_fields():
+            return
+
+        try:
+            # Obtener las carreras seleccionadas
+            carreras_seleccionadas = [
+                carrera for carrera, var in self.carreras_vars.items()
+                if var.get()
+            ]
+
+            if not carreras_seleccionadas:
+                messagebox.showerror("Error", "Debe seleccionar al menos una carrera.")
+                return
+
+            materia_data = {
+                "codigo": self.codigo_entry.get().strip(),
+                "nombre": self.nombre_materia_entry.get().strip(),
+                "creditos": int(self.creditos_entry.get().strip()),
+                "carreras": carreras_seleccionadas
+            }
+
+            # Verificar si el código ya existe
+            if self.db[COLLECTIONS['materias']].find_one({"codigo": materia_data["codigo"]}):
+                messagebox.showerror("Error", "Ya existe una materia con este código.")
+                return
+
+            self.db[COLLECTIONS['materias']].insert_one(materia_data)
+            messagebox.showinfo("Éxito", "Materia agregada correctamente.")
+            self.clear_materia_fields()
+            self.load_data()
+
+        except ValueError:
+            messagebox.showerror("Error", "El campo créditos debe ser un número.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al agregar materia: {e}")
+
+    def update_materia(self):
+        if not self.selected_item or not self.validate_materia_fields():
+            return
+
+        try:
+            # Obtener las carreras seleccionadas
+            carreras_seleccionadas = [
+                carrera for carrera, var in self.carreras_vars.items()
+                if var.get()
+            ]
+
+            if not carreras_seleccionadas:
+                messagebox.showerror("Error", "Debe seleccionar al menos una carrera.")
+                return
+
+            codigo = self.codigo_entry.get().strip()
+            materia_data = {
+                "codigo": codigo,
+                "nombre": self.nombre_materia_entry.get().strip(),
+                "creditos": int(self.creditos_entry.get().strip()),
+                "carreras": carreras_seleccionadas
+            }
+
+            # Verificar si el nuevo código ya existe (si se cambió)
+            existing = self.db[COLLECTIONS['materias']].find_one({"codigo": codigo})
+            if existing and str(existing.get("_id")) != str(self.selected_item):
+                messagebox.showerror("Error", "Ya existe una materia con este código.")
+                return
+
+            self.db[COLLECTIONS['materias']].update_one(
+                {"_id": self.selected_item},
+                {"$set": materia_data}
+            )
+            messagebox.showinfo("Éxito", "Materia actualizada correctamente.")
+            self.clear_materia_fields()
+            self.load_data()
+
+        except ValueError:
+            messagebox.showerror("Error", "El campo créditos debe ser un número.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al actualizar materia: {e}")
+
+    def validate_materia_fields(self):
+        codigo = self.codigo_entry.get().strip()
+        nombre = self.nombre_materia_entry.get().strip()
+        creditos = self.creditos_entry.get().strip()
+
+        if not all([codigo, nombre, creditos]):
+            messagebox.showerror("Error", "Por favor, completa todos los campos.")
+            return False
+
+        try:
+            int(creditos)
+        except ValueError:
+            messagebox.showerror("Error", "El campo créditos debe ser un número.")
+            return False
+
+        return True
+
+    def delete_materia(self):
+        if not self.selected_item:
+            messagebox.showwarning("Advertencia", "Por favor, selecciona una materia para eliminar.")
+            return
+
+        if messagebox.askyesno("Confirmar", "¿Estás seguro de eliminar esta materia?"):
+            try:
+                self.db[COLLECTIONS['materias']].delete_one({"_id": self.selected_item})
+                messagebox.showinfo("Éxito", "Materia eliminada correctamente.")
+                self.clear_materia_fields()
+                self.load_data()
+            except Exception as e:
+                messagebox.showerror("Error", f"Error al eliminar materia: {e}")
+
+    def clear_materia_fields(self):
+        self.codigo_entry.delete(0, tk.END)
+        self.nombre_materia_entry.delete(0, tk.END)
+        self.creditos_entry.delete(0, tk.END)
+        # Desmarcar todos los checkboxes
+        for var in self.carreras_vars.values():
+            var.set(False)
+        self.selected_item = None
+        self.update_materia_button.config(state=tk.DISABLED)
+        self.delete_materia_button.config(state=tk.DISABLED)
+
+    def add_profesor(self):
+        if not self.validate_profesor_fields():
+            return
+
+        try:
+            profesor_data = {
+                "nombre": self.nombre_prof_entry.get().strip(),
+                "licenciatura": self.licenciatura_entry.get().strip(),
+                "email": self.email_entry.get().strip()
+            }
+
+            # Verificar si el email ya existe
+            if self.db[COLLECTIONS['profesores']].find_one({"email": profesor_data["email"]}):
+                messagebox.showerror("Error", "Ya existe un profesor con este email.")
+                return
+
+            self.db[COLLECTIONS['profesores']].insert_one(profesor_data)
+            messagebox.showinfo("Éxito", "Profesor agregado correctamente.")
+            self.clear_profesor_fields()
+            self.load_data()
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al agregar profesor: {e}")
+
+    def update_profesor(self):
+        if not self.selected_item or not self.validate_profesor_fields():
+            return
+
+        try:
+            email = self.email_entry.get().strip()
+            profesor_data = {
+                "nombre": self.nombre_prof_entry.get().strip(),
+                "licenciatura": self.licenciatura_entry.get().strip(),
+                "email": email
+            }
+
+            # Verificar si el nuevo email ya existe (si se cambió)
+            existing = self.db[COLLECTIONS['profesores']].find_one({"email": email})
+            if existing and str(existing.get("_id")) != str(self.selected_item):
+                messagebox.showerror("Error", "Ya existe un profesor con este email.")
+                return
+
+            self.db[COLLECTIONS['profesores']].update_one(
+                {"_id": self.selected_item},
+                {"$set": profesor_data}
+            )
+            messagebox.showinfo("Éxito", "Profesor actualizado correctamente.")
+            self.clear_profesor_fields()
+            self.load_data()
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al actualizar profesor: {e}")
+
+    def delete_profesor(self):
+        if not self.selected_item:
+            messagebox.showwarning("Advertencia", "Por favor, selecciona un profesor para eliminar.")
+            return
+
+        if messagebox.askyesno("Confirmar", "¿Estás seguro de eliminar este profesor?"):
+            try:
+                self.db[COLLECTIONS['profesores']].delete_one({"_id": self.selected_item})
+                messagebox.showinfo("Éxito", "Profesor eliminado correctamente.")
+                self.clear_profesor_fields()
+                self.load_data()
+            except Exception as e:
+                messagebox.showerror("Error", f"Error al eliminar profesor: {e}")
+
+    def validate_profesor_fields(self):
+        nombre = self.nombre_prof_entry.get().strip()
+        licenciatura = self.licenciatura_entry.get().strip()
+        email = self.email_entry.get().strip()
+
+        if not all([nombre, licenciatura, email]):
+            messagebox.showerror("Error", "Por favor, completa todos los campos.")
+            return False
+
+        # Validar formato de email
+        if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+            messagebox.showerror("Error", "Formato de email inválido.")
+            return False
+
+        return True
+
+    def clear_profesor_fields(self):
+        self.nombre_prof_entry.delete(0, tk.END)
+        self.licenciatura_entry.delete(0, tk.END)
+        self.email_entry.delete(0, tk.END)
+        self.selected_item = None
+        self.update_profesor_button.config(state=tk.DISABLED)
+        self.delete_profesor_button.config(state=tk.DISABLED)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = MongoViewerApp(root)
+    root.protocol("WM_DELETE_WINDOW", app.on_closing)
+    root.mainloop()
