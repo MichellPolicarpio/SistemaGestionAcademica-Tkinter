@@ -1,5 +1,4 @@
 # 🎓 Sistema de Gestión Académica
-
 ## 📋 Descripción
 El Sistema de Gestión Académica es una aplicación de escritorio desarrollada con Python y Tkinter que permite administrar información académica de la Facultad de Ingeniería Eléctrica y Electrónica. La aplicación se conecta con MongoDB Atlas para almacenar y gestionar datos de estudiantes, materias y profesores.
 
@@ -22,17 +21,14 @@ El Sistema de Gestión Académica es una aplicación de escritorio desarrollada 
 ```
 git clone https://github.com/yourusername/sistema-gestion-academica-fie.git
 ```
-
 2. Instala las dependencias:
 ```
 pip install pymongo pillow
 ```
-
 3. Coloca una imagen llamada "FIEE.png" en el directorio principal para el logo
 
 ## ⚙️ Configuración
 El sistema está preconfigurado para conectarse a una base de datos MongoDB específica. Para cambiar esta configuración, modifica las siguientes variables al inicio del archivo:
-
 ```python
 MONGO_URI = "tu_cadena_de_conexion_mongodb"
 DATABASE_NAME = "nombre_de_tu_base_de_datos"
@@ -43,7 +39,6 @@ DATABASE_NAME = "nombre_de_tu_base_de_datos"
 ```
 python main.py
 ```
-
 2. Conecta la aplicación a MongoDB mediante el botón "Conectar a MongoDB"
 3. Usa las diferentes pestañas para gestionar estudiantes, materias y profesores
 
@@ -67,7 +62,8 @@ El sistema maneja tres colecciones principales:
 - **email**: Correo electrónico institucional
 
 ## 📷 Capturas de pantalla
-*(Para agregar capturas de pantalla de la aplicación en funcionamiento)*
+![Agregando Alumno](AgregandoAlumno.jpg)
+![Consulta](Consulta.jpg)
 
 ## 📜 Licencia
 © 2024 Michell Alexis Policarpio Moran - Todos los derechos reservados
