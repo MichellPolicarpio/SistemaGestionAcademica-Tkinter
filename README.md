@@ -1,6 +1,6 @@
 # 🎓 Sistema de Gestión Académica
 ## 📋 Descripción
-El Sistema de Gestión Académica es una aplicación de escritorio desarrollada con Python y Tkinter que permite administrar información académica de la Facultad de Ingeniería Eléctrica y Electrónica. La aplicación se conecta con MongoDB Atlas para almacenar y gestionar datos de estudiantes, materias y profesores.
+El Sistema de Gestión Académica es una aplicación de escritorio desarrollada con Python y Tkinter que permite administrar información académica. La aplicación se conecta con MongoDB Atlas para almacenar y gestionar datos de estudiantes, materias y profesores.
 
 ## ✨ Características
 - **🖥️ Interfaz gráfica intuitiva** con diseño moderno y responsivo
