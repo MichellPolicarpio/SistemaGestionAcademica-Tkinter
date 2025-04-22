@@ -63,8 +63,8 @@ El sistema maneja tres colecciones principales:
 
 ## 📷 Capturas de pantalla
 <div style="display: flex; justify-content: space-between;">
-  <img src="Screenshots/AgregandoAlumno.jpg" alt="Agregando Alumno" width="300"/>
-  <img src="Screenshots/Consulta.jpg" alt="Consulta" width="300"/>
+  <img src="Screenshots/AgregandoAlumno.jpg" alt="Agregando Alumno" width="350"/>
+  <img src="Screenshots/Consulta.jpg" alt="Consulta" width="350"/>
 </div>
 
 ## 📜 Licencia
