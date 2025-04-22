@@ -67,9 +67,6 @@ El sistema maneja tres colecciones principales:
   <img src="Screenshots/Consulta.jpg" alt="Consulta" width="350"/>
 </div>
 
-## 📜 Licencia
-© 2024 Michell Alexis Policarpio Moran - Todos los derechos reservados
-
 ## 👤 Autor
 - **Michell Alexis Policarpio Moran**
 - **Matrícula**: zS21002379
@@ -79,3 +76,6 @@ El sistema maneja tres colecciones principales:
 ## Agradecimientos
 - Facultad de Ingeniería Eléctrica y Electrónica por el apoyo institucional
 - MongoDB Atlas por proporcionar servicios de base de datos en la nube
+
+## 📜 Licencia
+© 2024 Michell Alexis Policarpio Moran - Todos los derechos reservados
