@@ -8,7 +8,7 @@ import os
 
 # --- Configuración ---
 MONGO_URI = "mongodb+srv://michellpolicarpio:policarpio@cluster0.2yrckuk.mongodb.net/"
-DATABASE_NAME = "Usuarios"
+DATABASE_NAME = "GestionAcademica"
 
 # Colecciones
 COLLECTIONS = {
