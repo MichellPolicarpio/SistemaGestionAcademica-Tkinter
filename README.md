@@ -62,8 +62,8 @@ El sistema maneja tres colecciones principales:
 - **email**: Correo electrónico institucional
 
 ## 📷 Capturas de pantalla
-![Agregando Alumno](AgregandoAlumno.jpg)
-![Consulta](Consulta.jpg)
+![Agregando Alumno](Screenshots/AgregandoAlumno.jpg)
+![Consulta](Screenshots/Consulta.jpg)
 
 ## 📜 Licencia
 © 2024 Michell Alexis Policarpio Moran - Todos los derechos reservados
